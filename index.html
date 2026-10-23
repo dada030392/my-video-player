@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0d1423">
+  <title>マイ動画プレーヤー</title>
+  <style>
+    :root{color-scheme:dark;font-family:-apple-system,BlinkMacSystemFont,"Helvetica Neue",sans-serif;background:#0d1423;color:#f4f7fb}
+    *{box-sizing:border-box}body{margin:0;min-height:100dvh;background:radial-gradient(circle at 85% 0%,#243d59 0%,transparent 42%),#0d1423}
+    main{width:min(740px,100%);margin:auto;padding:clamp(18px,5vw,38px) 18px 55px}
+    header{margin:26px 0 30px}.eyebrow{font-size:12px;letter-spacing:.13em;color:#89bee9;font-weight:750;margin-bottom:10px}
+    h1{font-size:clamp(30px,7vw,46px);margin:0 0 12px;letter-spacing:-.045em}p{line-height:1.7;color:#b9c6d7}
+    .panel{border:1px solid #314157;background:#172234;border-radius:22px;padding:20px;box-shadow:0 16px 45px #0002}
+    .choose{display:flex;justify-content:center;align-items:center;gap:12px;text-align:center;min-height:72px;border-radius:16px;background:#5ab3fe;color:#061523;font-size:19px;font-weight:800;cursor:pointer;padding:15px}
+    .choose:focus-within{outline:3px solid #fff;outline-offset:3px}.choose input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+    .hint{font-size:13px;text-align:center;margin:14px 0 0;color:#a8b7c9}
+    .player{margin-top:22px}video{display:block;width:100%;max-height:65dvh;aspect-ratio:16/9;background:#000;border-radius:15px;object-fit:contain}
+    .filename{font-size:15px;overflow-wrap:anywhere;font-weight:650;margin:14px 0 4px}.meta{font-size:12px;color:#aab9cb;margin:0}
+    .actions{display:flex;gap:10px;margin-top:16px}.actions button{flex:1;background:#26364b;color:#fff;border:1px solid #42556e;border-radius:14px;padding:13px;font-size:15px;font-weight:700}
+    .actions button:disabled{opacity:.4}.status{margin-top:18px;padding:13px 15px;border-radius:13px;background:#11293b;color:#bce8ff;font-size:14px;line-height:1.6}
+    .help{margin-top:26px}.help h2{font-size:19px;margin-bottom:8px}.help p{font-size:14px;margin:8px 0}
+    .small{font-size:12px;color:#91a3ba;margin-top:27px}.hide{display:none!important}
+  </style>
+</head>
+<body>
+<main>
+  <header><div class="eyebrow">PRIVATE VIDEO PLAYER</div><h1>マイ動画プレーヤー</h1><p>iPhoneに保存した動画を選んで再生。<br>動画をサイトへアップロードすることはありません。</p></header>
+  <section class="panel" aria-label="動画を選んで再生">
+    <label class="choose" for="videoFile">▶ &nbsp; 写真から動画を選ぶ<input id="videoFile" type="file" accept="video/*" aria-label="iPhoneの動画を選ぶ"></label>
+    <p class="hint">写真ライブラリが出ない場合は「ファイルを選択」から選んでください。</p>
+    <div id="playerArea" class="player hide"><video id="video" controls playsinline webkit-playsinline preload="metadata"></video><div id="filename" class="filename"></div><p id="meta" class="meta"></p><div class="actions"><button id="playPause" type="button">再生 / 一時停止</button><button id="clear" type="button">動画を閉じる</button></div></div>
+    <div id="status" class="status" role="status" aria-live="polite">準備OK。上のボタンから動画を選んでください。</div>
+  </section>
+  <section class="help"><h2>使い方</h2><p>①「写真から動画を選ぶ」を押します。</p><p>② 写真ライブラリ、または「ファイル」から動画を1つ選びます。</p><p>③ 再生ボタンを押してください。</p><p class="small">このページは端末で選択された動画をその場で開くだけです。写真アプリの全件読み取りや自動同期は行いません。APTVのCarPlay側では、ファイル選択やローカル動画再生が利用できない可能性があります。車内での動画視聴は必ず安全な場所に停車して行ってください。</p></section>
+</main>
+<script>
+(()=>{
+const input=document.getElementById('videoFile');const video=document.getElementById('video');const area=document.getElementById('playerArea');const status=document.getElementById('status');const name=document.getElementById('filename');const meta=document.getElementById('meta');const play=document.getElementById('playPause');const clear=document.getElementById('clear');let url=null;
+function message(s){status.textContent=s}
+function release(){video.pause();video.removeAttribute('src');video.load();if(url){URL.revokeObjectURL(url);url=null}}
+input.addEventListener('change',()=>{const file=input.files&&input.files[0];if(!file){message('動画の選択がキャンセルされました。');return}if(!file.type.startsWith('video/')&&!/\.(mp4|mov|m4v|webm|avi|mkv)$/i.test(file.name)){message('動画ファイルを選んでください。');return}release();url=URL.createObjectURL(file);video.src=url;area.classList.remove('hide');name.textContent=file.name;meta.textContent=(file.size/1024/1024).toFixed(1)+' MB';message('動画を読み込みました。再生ボタンを押してください。');video.scrollIntoView({block:'nearest',behavior:'smooth'});});
+video.addEventListener('loadedmetadata',()=>{if(Number.isFinite(video.duration))meta.textContent+=' ・ '+Math.floor(video.duration/60)+'分'+Math.floor(video.duration%60)+'秒'});
+video.addEventListener('error',()=>message('この形式はブラウザで再生できない可能性があります。MP4（H.264）でもお試しください。'));
+play.addEventListener('click',async()=>{if(video.paused){try{await video.play();message('再生中です。')}catch(e){message('再生できませんでした。ブラウザの再生制限、または動画形式を確認してください。')}}else{video.pause();message('一時停止しました。')}});
+clear.addEventListener('click',()=>{release();area.classList.add('hide');input.value='';name.textContent='';meta.textContent='';message('動画を閉じました。別の動画を選べます。')});
+window.addEventListener('pagehide',release);
+})();
+</script>
+</body>
+</html>
